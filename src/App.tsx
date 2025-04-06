@@ -22,6 +22,7 @@ interface Collection {
 }
 
 function App() {
+  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [datas, setDatas] = useState<Collection[]>([]);
   const [newData, setNewData] = useState({
     title: "",
@@ -49,6 +50,7 @@ function App() {
     );
     fetchDatas();
     setNewData({ title: "", description: "", url_picture: "" });
+    setIsCreateFormOpen(false);
   };
 
   return (
@@ -64,7 +66,7 @@ function App() {
             />
           ))}
         </div>
-        <Dialog>
+        <Dialog open={isCreateFormOpen} onOpenChange={setIsCreateFormOpen}>
           <DialogTrigger>
             <Button
               className="fixed bottom-4 right-4 z-1080"
