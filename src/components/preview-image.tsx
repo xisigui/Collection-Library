@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from "react";
 
-export function PreviewImageDialog({ imgUrl, title, description }) {
+export function PreviewImageDialog({ id, imgUrl, title, description }) {
   const [openDialog, setOpenDialog] = useState(false);
 
   // Function to handle the DialogTrigger click
@@ -26,6 +26,14 @@ export function PreviewImageDialog({ imgUrl, title, description }) {
     e.stopPropagation(); // Prevent the dropdown from closing when "Delete" is clicked
     setOpenDialog(true); // Open the dialog
   };
+
+  const handleDeleteCollection = async (id: number) => {
+    // @ts-ignore
+    await window.electron.deleteCollection(id);
+    window.location.reload();
+    setOpenDialog(false);
+  };
+
   return (
     <Card className="py-0 gap-0 rounded-lg">
       <CardContent className="px-0">
@@ -66,13 +74,17 @@ export function PreviewImageDialog({ imgUrl, title, description }) {
                     <DialogTitle>Are you absolutely sure?</DialogTitle>
                     <DialogDescription>
                       This action cannot be undone. This will permanently delete
-                      your account and remove your data from our servers.
+                      the data.
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter>
-                    <Button onClick={() => setOpenDialog(false)}>
+                    <Button
+                      variant="destructive"
+                      onClick={() => handleDeleteCollection(id)}
+                    >
                       Confirm
                     </Button>
+                    <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>

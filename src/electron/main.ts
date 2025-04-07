@@ -51,6 +51,15 @@ ipcMain.handle("get-all-data", async () => {
   });
 });
 
+ipcMain.handle("delete-collection", async (event, id: number) => {
+  return new Promise((resolve, reject) => {
+    db?.run("DELETE FROM collections WHERE id = ?", [id], function (err) {
+      if (err) reject(err);
+      else resolve({ id });
+    });
+  });
+});
+
 ipcMain.handle(
   "create-collection",
   async (event, title: string, description: string, imageURL: string) => {

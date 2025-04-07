@@ -38,6 +38,7 @@ function App() {
     // @ts-ignore
     const res = await window.electron.getAllItems();
     setDatas(res);
+    console.log(res);
   };
 
   const handleCreateCollection = async (e) => {
@@ -55,17 +56,27 @@ function App() {
 
   return (
     <>
-      <ScrollArea className="h-screen p-4">
-        <div className="grid grid-cols-4 gap-4 w-full h-full">
-          {datas.map((item, index) => (
-            <PreviewImageDialog
-              key={index}
-              imgUrl={item.url_picture}
-              title={item.title}
-              description={item.description}
-            />
-          ))}
-        </div>
+      <div className="h-screen flex flex-col items-center justify-between p-4 overflow-hidden">
+        {datas.length === 0 ? (
+          <Label className="justify-center h-screen overflow-hidden">
+            No Data Available
+          </Label>
+        ) : (
+          <ScrollArea className="flex-1 size-full p-4 ">
+            <div className="grid grid-cols-4 gap-4 w-full h-full">
+              {datas.map((item, index) => (
+                <PreviewImageDialog
+                  key={index}
+                  id={item.id}
+                  imgUrl={item.url_picture}
+                  title={item.title}
+                  description={item.description}
+                />
+              ))}
+            </div>
+          </ScrollArea>
+        )}
+
         <Dialog open={isCreateFormOpen} onOpenChange={setIsCreateFormOpen}>
           <DialogTrigger>
             <Button
@@ -115,7 +126,7 @@ function App() {
             </form>
           </DialogContent>
         </Dialog>
-      </ScrollArea>
+      </div>
     </>
   );
 }
