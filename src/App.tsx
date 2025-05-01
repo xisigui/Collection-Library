@@ -22,6 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { isURL } from "validator";
 
 interface Collection {
   id: number;
@@ -104,8 +105,9 @@ function App() {
                     <div className="relative overflow-hidden rounded-t-lg">
                       <img
                         src={
-                          item.url_picture ||
-                          "https://placehold.co/600x400/transparent/FFF?text=No Image Found"
+                          isURL(item.url_picture)
+                            ? item.url_picture
+                            : "https://placehold.co/600x400/transparent/FFF?text=No Image Found"
                         }
                         alt="Product Image"
                         width={600}
