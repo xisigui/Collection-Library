@@ -2,18 +2,8 @@ import "./App.css";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { CirclePlus, Ellipsis } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
@@ -22,7 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { isURL } from "validator";
-import { ItemDialog } from "./components/items/item-dialog";
+import { ItemFormDialog } from "./components/items/item-form-dialog";
+import { DeleteItemDialog } from "./components/items/delete-item-dialog";
 
 interface Collection {
   id: number;
@@ -42,26 +33,6 @@ function App() {
     // @ts-ignore
     const res = await window.electron.getAllItems();
     setDatas(res);
-  };
-
-  const [openDialog, setOpenDialog] = useState(false);
-
-  const handleDeleteClick = (e) => {
-    e.stopPropagation();
-    setOpenDialog(true);
-  };
-
-  const handleDeleteCollection = async (id: number) => {
-    try {
-      // @ts-ignore
-      await window.electron.deleteCollection(id);
-      toast.success("Collection deleted successfully!");
-    } catch (error) {
-      toast.error("Failed to delete collection. Please try again.");
-    } finally {
-      fetchDatas();
-      setOpenDialog(false);
-    }
   };
 
   return (
@@ -102,7 +73,7 @@ function App() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-24">
-                            <ItemDialog
+                            <ItemFormDialog
                               initialData={{
                                 title: item.title,
                                 description: item.description,
@@ -117,45 +88,18 @@ function App() {
                                 </DropdownMenuItem>
                               }
                             />
-                            <DropdownMenuItem onClick={handleDeleteClick}>
-                              Delete
-                            </DropdownMenuItem>
+                            <DeleteItemDialog
+                              itemId={item.id}
+                              trigger={
+                                <DropdownMenuItem
+                                  onSelect={(e) => e.preventDefault()}
+                                >
+                                  Delete
+                                </DropdownMenuItem>
+                              }
+                            />
                           </DropdownMenuContent>
                         </DropdownMenu>
-
-                        {/* Dialog component */}
-                        {openDialog && (
-                          <Dialog
-                            open={openDialog}
-                            onOpenChange={setOpenDialog}
-                          >
-                            <DialogTrigger />
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>
-                                  Are you absolutely sure?
-                                </DialogTitle>
-                                <DialogDescription>
-                                  This action cannot be undone. This will
-                                  permanently delete the data.
-                                </DialogDescription>
-                              </DialogHeader>
-                              <DialogFooter>
-                                <Button
-                                  variant="destructive"
-                                  onClick={() =>
-                                    handleDeleteCollection(item.id)
-                                  }
-                                >
-                                  Confirm
-                                </Button>
-                                <Button onClick={() => setOpenDialog(false)}>
-                                  Cancel
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
-                        )}
                       </div>
                     </div>
 
@@ -172,7 +116,7 @@ function App() {
           </ScrollArea>
         )}
 
-        <ItemDialog
+        <ItemFormDialog
           trigger={
             <Button
               className="fixed bottom-4 right-4 z-1080"

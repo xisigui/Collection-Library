@@ -24,7 +24,11 @@ interface ItemDialogProps {
   trigger: React.ReactNode;
 }
 
-export function ItemDialog({ initialData, itemId, trigger }: ItemDialogProps) {
+export function ItemFormDialog({
+  initialData,
+  itemId,
+  trigger,
+}: ItemDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -40,8 +44,12 @@ export function ItemDialog({ initialData, itemId, trigger }: ItemDialogProps) {
     try {
       if (itemId) {
         // @ts-ignore
-        // await window.electron.updateItem(itemId, formData);
-        console.log("Update Collection");
+        await window.electron.updateCollection(
+          itemId,
+          formData.title,
+          formData.description,
+          formData.imageUrl
+        );
       } else {
         // @ts-ignore
         await await window.electron.createCollection(

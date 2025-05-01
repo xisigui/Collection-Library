@@ -51,6 +51,28 @@ ipcMain.handle("get-all-data", async () => {
   });
 });
 
+ipcMain.handle(
+  "update-collection",
+  async (
+    event,
+    id: number,
+    title: string,
+    description: string,
+    imageURL: string
+  ) => {
+    return new Promise((resolve, reject) => {
+      db?.run(
+        "UPDATE collections SET title = ?, description = ?, url_picture = ? WHERE id = ?",
+        [title, description, imageURL, id],
+        function (err) {
+          if (err) reject(err);
+          else resolve({ id, title, description, imageURL });
+        }
+      );
+    });
+  }
+);
+
 ipcMain.handle("delete-collection", async (event, id: number) => {
   return new Promise((resolve, reject) => {
     db?.run("DELETE FROM collections WHERE id = ?", [id], function (err) {
