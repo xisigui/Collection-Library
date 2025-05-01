@@ -11,7 +11,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -23,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { isURL } from "validator";
+import { ItemDialog } from "./components/items/item-dialog";
 
 interface Collection {
   id: number;
@@ -32,13 +32,7 @@ interface Collection {
 }
 
 function App() {
-  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [datas, setDatas] = useState<Collection[]>([]);
-  const [newData, setNewData] = useState({
-    title: "",
-    description: "",
-    url_picture: "",
-  });
 
   useEffect(() => {
     fetchDatas();
@@ -48,25 +42,6 @@ function App() {
     // @ts-ignore
     const res = await window.electron.getAllItems();
     setDatas(res);
-  };
-
-  const handleCreateCollection = async (e) => {
-    e.preventDefault();
-    try {
-      // @ts-ignore
-      const res = await window.electron.createCollection(
-        newData.title,
-        newData.description,
-        newData.url_picture
-      );
-      toast.success("Collection created successfully!");
-    } catch (error) {
-      toast.error("Failed to create collection. Please try again.");
-    } finally {
-      fetchDatas();
-      setNewData({ title: "", description: "", url_picture: "" });
-      setIsCreateFormOpen(false);
-    }
   };
 
   const [openDialog, setOpenDialog] = useState(false);
@@ -127,7 +102,21 @@ function App() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-24">
-                            <DropdownMenuItem>Edit</DropdownMenuItem>
+                            <ItemDialog
+                              initialData={{
+                                title: item.title,
+                                description: item.description,
+                                imageUrl: item.url_picture,
+                              }}
+                              itemId={item.id}
+                              trigger={
+                                <DropdownMenuItem
+                                  onSelect={(e) => e.preventDefault()}
+                                >
+                                  Edit
+                                </DropdownMenuItem>
+                              }
+                            />
                             <DropdownMenuItem onClick={handleDeleteClick}>
                               Delete
                             </DropdownMenuItem>
@@ -183,8 +172,8 @@ function App() {
           </ScrollArea>
         )}
 
-        <Dialog open={isCreateFormOpen} onOpenChange={setIsCreateFormOpen}>
-          <DialogTrigger>
+        <ItemDialog
+          trigger={
             <Button
               className="fixed bottom-4 right-4 z-1080"
               variant="outline"
@@ -192,46 +181,8 @@ function App() {
             >
               <CirclePlus size={48} strokeWidth={1.5} />
             </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Item</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleCreateCollection}>
-              <div className="grid w-full items-center gap-1.5">
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={newData.title}
-                  onChange={(e) =>
-                    setNewData({ ...newData, title: e.target.value })
-                  }
-                />
-              </div>
-              <div className="grid w-full items-center gap-1.5">
-                <Label htmlFor="description">Description</Label>
-                <Input
-                  id="description"
-                  value={newData.description}
-                  onChange={(e) =>
-                    setNewData({ ...newData, description: e.target.value })
-                  }
-                />
-              </div>
-              <div className="grid w-full items-center gap-1.5">
-                <Label htmlFor="pictureUrl">Picture URL</Label>
-                <Input
-                  id="pictureUrl"
-                  value={newData.url_picture}
-                  onChange={(e) =>
-                    setNewData({ ...newData, url_picture: e.target.value })
-                  }
-                />
-              </div>
-              <Button className="mt-3 p-4">Save</Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+          }
+        />
       </div>
     </>
   );
