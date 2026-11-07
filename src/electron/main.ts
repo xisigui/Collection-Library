@@ -1,105 +1,48 @@
-import { app, BrowserWindow, ipcMain } from "electron";
-import path from "path";
-import { getPreloadPath } from "./pathResolver.js";
-import { isDev } from "./util.js";
-import sqlite3 from "sqlite3";
+import { app, BrowserWindow, dialog } from "electron";
+import path from "node:path";
+import type sqlite3 from "sqlite3";
+import { openDatabase, closeDatabase } from "./database/database.js";
+import { createCollectionRepository } from "./database/collection-repository.js";
+import { registerCollectionHandlers } from "./ipc/collection-handlers.js";
+import { createMainWindow } from "./window.js";
+import { getRendererUrl } from "./paths.js";
 
-let db: sqlite3.Database | null = null;
+let database: sqlite3.Database | undefined;
+let isClosing = false;
 
-function createDatabase() {
-  const userDataPath = path.join(app.getPath("userData"), "data.db");
-
-  db = new sqlite3.Database(userDataPath, (err) => {
-    if (err) {
-      console.error("Error opening database: ", err);
-    } else {
-      console.log("Connected to the SQLite database.");
-    }
-  });
-
-  db.run(`CREATE TABLE IF NOT EXISTS collections (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    description TEXT NOT NULL,
-    url_picture TEXT NOT NULL
-  )`);
+function reportStartupError(error: unknown) {
+  console.error(error);
+  dialog.showErrorBox(
+    "Unable to start Collection Library",
+    error instanceof Error ? error.message : "An unexpected error occurred.",
+  );
+  app.quit();
 }
 
-app.on("ready", () => {
-  createDatabase();
-  const mainWindow = new BrowserWindow({
-    width: 1195,
-    height: 950,
-    webPreferences: {
-      preload: getPreloadPath(),
-    },
+app.whenReady().then(async () => {
+  database = await openDatabase(path.join(app.getPath("userData"), "data.db"));
+  registerCollectionHandlers(createCollectionRepository(database), getRendererUrl());
+  await createMainWindow();
+
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      void createMainWindow().catch(reportStartupError);
+    }
   });
-  mainWindow.setMenuBarVisibility(false);
-  if (isDev()) {
-    mainWindow.loadURL("http://localhost:5123");
-  } else {
-    mainWindow.loadFile(path.join(app.getAppPath(), "dist-react/index.html"));
-  }
-});
-
-ipcMain.handle("get-all-data", async () => {
-  return new Promise((resolve, reject) => {
-    db?.all("SELECT * FROM collections", (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
-  });
-});
-
-ipcMain.handle(
-  "update-collection",
-  async (
-    event,
-    id: number,
-    title: string,
-    description: string,
-    imageURL: string
-  ) => {
-    return new Promise((resolve, reject) => {
-      db?.run(
-        "UPDATE collections SET title = ?, description = ?, url_picture = ? WHERE id = ?",
-        [title, description, imageURL, id],
-        function (err) {
-          if (err) reject(err);
-          else resolve({ id, title, description, imageURL });
-        }
-      );
-    });
-  }
-);
-
-ipcMain.handle("delete-collection", async (event, id: number) => {
-  return new Promise((resolve, reject) => {
-    db?.run("DELETE FROM collections WHERE id = ?", [id], function (err) {
-      if (err) reject(err);
-      else resolve({ id });
-    });
-  });
-});
-
-ipcMain.handle(
-  "create-collection",
-  async (event, title: string, description: string, imageURL: string) => {
-    return new Promise((resolve, reject) => {
-      db?.run(
-        "INSERT INTO collections (title, description, url_picture) VALUES (?,?,?)",
-        [title, description, imageURL],
-        function (err) {
-          if (err) reject(err);
-          else resolve({ id: this.lastID, title, description, imageURL });
-        }
-      );
-    });
-  }
-);
+}).catch(reportStartupError);
 
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
+  if (process.platform !== "darwin") app.quit();
+});
+
+app.on("before-quit", (event) => {
+  if (!database) return;
+  event.preventDefault();
+  if (isClosing) return;
+  isClosing = true;
+
+  void closeDatabase(database).catch(console.error).finally(() => {
+    database = undefined;
     app.quit();
-  }
+  });
 });

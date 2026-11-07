@@ -1,16 +1,18 @@
-import { ipcRenderer } from "electron";
-const electron = require("electron");
+import { contextBridge, ipcRenderer } from "electron";
+import type { CollectionIpc, CollectionsApi } from "../shared/collections.js" with { "resolution-mode": "import" };
 
-electron.contextBridge.exposeInMainWorld("electron", {
-  getAllItems: () => ipcRenderer.invoke("get-all-data"),
-  createCollection: (title: string, description: string, imageURL: string) =>
-    ipcRenderer.invoke("create-collection", title, description, imageURL),
-  updateCollection: (
-    id: number,
-    title: string,
-    description: string,
-    imageURL: string
-  ) =>
-    ipcRenderer.invoke("update-collection", id, title, description, imageURL),
-  deleteCollection: (id: number) => ipcRenderer.invoke("delete-collection", id),
-});
+function invoke<Channel extends keyof CollectionIpc>(
+  channel: Channel,
+  ...args: Parameters<CollectionIpc[Channel]>
+): Promise<Awaited<ReturnType<CollectionIpc[Channel]>>> {
+  return ipcRenderer.invoke(channel, ...args);
+}
+
+const collections: CollectionsApi = {
+  list: () => invoke("collections:list"),
+  create: (input) => invoke("collections:create", input),
+  update: (id, input) => invoke("collections:update", id, input),
+  delete: (id) => invoke("collections:delete", id),
+};
+
+contextBridge.exposeInMainWorld("collections", collections);
